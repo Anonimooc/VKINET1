@@ -3,13 +3,14 @@ import {
   useMutation,
   useQueryClient,
 } from '@tanstack/react-query';
-import { deleteStudentApi, getStudentsApi } from '@/api/studentsApi';
+import { addStudentApi, deleteStudentApi, getStudentsApi } from '@/api/studentsApi';
 import type StudentInterface from '@/types/StudentInterface';
 import isServer from '@/utils/isServer';
 
 interface StudentsHookInterface {
   students: StudentInterface[];
   deleteStudentMutate: (studentId: number) => void;
+  addStudentMutate: (student: Omit<StudentInterface, 'id'>) => void;
 }
 
 const useStudents = (): StudentsHookInterface => {
@@ -57,9 +58,45 @@ const useStudents = (): StudentsHookInterface => {
     },
   });
 
+  /**
+   * Мутация добавления студента
+   */
+  const addStudentMutate = useMutation({
+    mutationFn: async (student: Omit<StudentInterface, 'id'>) => addStudentApi(student),
+    onMutate: async (newStudent: Omit<StudentInterface, 'id'>) => {
+      await queryClient.cancelQueries({ queryKey: ['students'] });
+      const previousStudents = queryClient.getQueryData<StudentInterface[]>(['students']);
+
+      if (!previousStudents) return { previousStudents };
+
+      // Оптимистично добавляем временную запись (без id)
+      const tempStudent: StudentInterface = {
+        id: Math.floor(Math.random() * 1_000_000) * -1, // временный отрицательный id
+        ...newStudent,
+      } as StudentInterface;
+
+      queryClient.setQueryData<StudentInterface[]>(['students'], [tempStudent, ...previousStudents]);
+
+      return { previousStudents, tempId: tempStudent.id } as { previousStudents?: StudentInterface[]; tempId: number };
+    },
+    onError: (err, newStudent, context) => {
+      console.error('>>> addStudentMutate error', err);
+      queryClient.setQueryData<StudentInterface[]>(['students'], context?.previousStudents);
+    },
+    onSuccess: (created, variables, context) => {
+      if (!created) return;
+      const current = queryClient.getQueryData<StudentInterface[]>(['students']);
+      if (!current) return;
+      // Заменяем временного на созданного с id
+      const updated = current.map((s) => (s.id === context?.tempId ? created : s));
+      queryClient.setQueryData<StudentInterface[]>(['students'], updated);
+    },
+  });
+
   return {
     students: data ?? [],
     deleteStudentMutate: deleteStudentMutate.mutate,
+    addStudentMutate: addStudentMutate.mutate,
   };
 };
 
