@@ -9,10 +9,9 @@ import { deleteStudentDb } from '@/db/studentDb';
 const Students = (): React.ReactElement => {
   const { students, deleteStudentMutate } = useStudents();
 
-  const handleDeleteStudent = (studentId: number): void => {
+  const handleDeleteStudent = (studentId: number): void =>{
     deleteStudentMutate(studentId);
   };
-
   return (
     <div className={styles.Students}>
       {students.map((student: StudentInterface) => (

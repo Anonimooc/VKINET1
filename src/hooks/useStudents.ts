@@ -5,6 +5,7 @@ import {
 } from '@tanstack/react-query';
 import { deleteStudentApi, getStudentsApi } from '@/api/studentsApi';
 import type StudentInterface from '@/types/StudentInterface';
+import isServer from '@/utils/isServer';
 
 interface StudentsHookInterface {
   students: StudentInterface[];
@@ -14,7 +15,7 @@ interface StudentsHookInterface {
 const useStudents = (): StudentsHookInterface => {
   const queryClient = useQueryClient();
 
-  const { data } = useQuery({
+  const { data, refetch } = useQuery({
     queryKey: ['students'],
     queryFn: () => getStudentsApi(),
     enabled: true,
