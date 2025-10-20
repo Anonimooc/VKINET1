@@ -11,8 +11,31 @@ export const getStudentsApi = async (): Promise<StudentInterface[]> => {
     return students;
   }
   catch (err) {
-    console.log('>>> getGroupsApi', err);
+    console.log('>>> getStudentsApi', err);
     return [] as StudentInterface[];
+  }
+};
+
+export const addStudentApi = async (studentData: Omit<StudentInterface, 'id' | 'isDeleted'>): Promise<StudentInterface> => {
+  try {
+    const response = await fetch(`${process.env.NEXT_PUBLIC_API}students`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(studentData),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Ошибка HTTP: ${response.status}${response.statusText}`);
+    }
+    
+    const newStudent = await response.json() as StudentInterface;
+    return newStudent;
+  }
+  catch (err) {
+    console.log('>>> addStudentApi', err);
+    throw err;
   }
 };
 
@@ -30,25 +53,5 @@ export const deleteStudentApi = async (studentId: number): Promise<number> => {
   catch (err) {
     console.log('>>> deleteStudentApi', err);
     return -1;
-  }
-};
-
-export const addStudentApi = async (student: Omit<StudentInterface, 'id'>): Promise<StudentInterface | null> => {
-  try {
-    const response = await fetch(`${process.env.NEXT_PUBLIC_API}students`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(student),
-    });
-
-    if (!response.ok) {
-      throw new Error(`Ошибка HTTP: ${response.status}${response.statusText}`);
-    }
-
-    return await response.json() as StudentInterface;
-  }
-  catch (err) {
-    console.log('>>> addStudentApi', err);
-    return null;
   }
 };
